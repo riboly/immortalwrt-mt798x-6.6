@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4  # 已更新为 v4
 
       - name: Initialization Environment
         env:
@@ -20,20 +20,20 @@ jobs:
 
       - name: Add Feeds (PassWall2 & Others)
         run: |
-          # 1. 添加 xiaorouji 源 (这就是 PassWall 2)
+          # 添加 xiaorouji 源 (PassWall 2)
           echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> feeds.conf.default
           echo "src-git passwall_luci https://github.com/xiaorouji/openwrt-passwall.git;main" >> feeds.conf.default
           
-          # 2. 更新并安装所有插件 (包含 Usteer 和 WOL)
+          # 更新并安装所有插件
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
       - name: SSH Connection to Actions
         uses: mxschmitt/action-tmate@v3
-        # 【重要】脚本运行到这里会暂停！
-        # 请查看日志获取 SSH 连接地址 (例如 ssh xxxx@tmate.io)
-        # 连上后输入 make menuconfig 进行选择 (参考下方的菜单导航图)
-        # 选完保存后输入 exit 退出，编译才会继续
+        # 【注意】
+        # 1. 查看日志获取 SSH 连接地址 (例如 ssh xxxx@tmate.io)
+        # 2. 连上后输入 make menuconfig 进行选择
+        # 3. 选完保存后输入 exit 退出
 
       - name: Download & Compile
         run: |
@@ -41,7 +41,7 @@ jobs:
           make -j$(nproc) || make -j1 V=s
 
       - name: Upload Firmware
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # 已修复：更新为 v4，解决报错问题
         with:
           name: OpenWrt_Firmware
           path: bin/targets/
