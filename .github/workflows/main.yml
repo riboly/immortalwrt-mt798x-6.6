@@ -1,0 +1,47 @@
+name: Build RAX3000M (PW2 + Usteer + WOL)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Initialization Environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo -E apt-get -qq update
+          sudo -E apt-get -qq install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkg-config python2.7 python3 python3-pyelftools libpython3-dev qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+
+      - name: Add Feeds (PassWall2 & Others)
+        run: |
+          # 1. 添加 xiaorouji 源 (这就是 PassWall 2)
+          echo "src-git passwall_packages https://github.com/xiaorouji/openwrt-passwall-packages.git;main" >> feeds.conf.default
+          echo "src-git passwall_luci https://github.com/xiaorouji/openwrt-passwall.git;main" >> feeds.conf.default
+          
+          # 2. 更新并安装所有插件 (包含 Usteer 和 WOL)
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: SSH Connection to Actions
+        uses: mxschmitt/action-tmate@v3
+        # 【重要】脚本运行到这里会暂停！
+        # 请查看日志获取 SSH 连接地址 (例如 ssh xxxx@tmate.io)
+        # 连上后输入 make menuconfig 进行选择 (参考下方的菜单导航图)
+        # 选完保存后输入 exit 退出，编译才会继续
+
+      - name: Download & Compile
+        run: |
+          make download -j8
+          make -j$(nproc) || make -j1 V=s
+
+      - name: Upload Firmware
+        uses: actions/upload-artifact@v3
+        with:
+          name: OpenWrt_Firmware
+          path: bin/targets/
